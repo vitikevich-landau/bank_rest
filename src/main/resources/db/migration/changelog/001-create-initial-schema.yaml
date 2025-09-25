@@ -1,0 +1,493 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-users-table
+      author: system
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: username
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: email
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: password
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: first_name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phone_number
+                  type: VARCHAR(20)
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+              - column:
+                  name: is_locked
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: 002-create-roles-table
+      author: system
+      changes:
+        - createTable:
+            tableName: roles
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: description
+                  type: VARCHAR(100)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: 003-create-user-roles-table
+      author: system
+      changes:
+        - createTable:
+            tableName: user_roles
+            columns:
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: user_roles
+            columnNames: user_id, role_id
+        - addForeignKeyConstraint:
+            baseTableName: user_roles
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_user_roles_user
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: user_roles
+            baseColumnNames: role_id
+            referencedTableName: roles
+            referencedColumnNames: id
+            constraintName: fk_user_roles_role
+            onDelete: CASCADE
+
+  - changeSet:
+      id: 004-create-cards-table
+      author: system
+      changes:
+        - createTable:
+            tableName: cards
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: encrypted_card_number
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: masked_card_number
+                  type: VARCHAR(19)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: card_holder_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expiry_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cvv
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: ACTIVE
+              - column:
+                  name: card_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: balance
+                  type: DECIMAL(15,2)
+                  defaultValueNumeric: 0.00
+                  constraints:
+                    nullable: false
+              - column:
+                  name: daily_limit
+                  type: DECIMAL(15,2)
+              - column:
+                  name: owner_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: block_reason
+                  type: VARCHAR(255)
+              - column:
+                  name: blocked_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - addForeignKeyConstraint:
+            baseTableName: cards
+            baseColumnNames: owner_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_cards_owner
+            onDelete: CASCADE
+        - createIndex:
+            tableName: cards
+            indexName: idx_card_number
+            columns:
+              - column:
+                  name: encrypted_card_number
+        - createIndex:
+            tableName: cards
+            indexName: idx_card_owner
+            columns:
+              - column:
+                  name: owner_id
+        - createIndex:
+            tableName: cards
+            indexName: idx_card_status
+            columns:
+              - column:
+                  name: status
+
+  - changeSet:
+      id: 005-create-transactions-table
+      author: system
+      changes:
+        - createTable:
+            tableName: transactions
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: transaction_id
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: source_card_id
+                  type: BIGINT
+              - column:
+                  name: destination_card_id
+                  type: BIGINT
+              - column:
+                  name: amount
+                  type: DECIMAL(15,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: PENDING
+              - column:
+                  name: description
+                  type: VARCHAR(500)
+              - column:
+                  name: transaction_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processed_date
+                  type: TIMESTAMP
+              - column:
+                  name: reference_number
+                  type: VARCHAR(100)
+                  constraints:
+                    unique: true
+              - column:
+                  name: failure_reason
+                  type: VARCHAR(500)
+              - column:
+                  name: balance_before
+                  type: DECIMAL(15,2)
+              - column:
+                  name: balance_after
+                  type: DECIMAL(15,2)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - addForeignKeyConstraint:
+            baseTableName: transactions
+            baseColumnNames: source_card_id
+            referencedTableName: cards
+            referencedColumnNames: id
+            constraintName: fk_transactions_source_card
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: transactions
+            baseColumnNames: destination_card_id
+            referencedTableName: cards
+            referencedColumnNames: id
+            constraintName: fk_transactions_destination_card
+            onDelete: CASCADE
+        - createIndex:
+            tableName: transactions
+            indexName: idx_transaction_source
+            columns:
+              - column:
+                  name: source_card_id
+        - createIndex:
+            tableName: transactions
+            indexName: idx_transaction_destination
+            columns:
+              - column:
+                  name: destination_card_id
+        - createIndex:
+            tableName: transactions
+            indexName: idx_transaction_date
+            columns:
+              - column:
+                  name: transaction_date
+        - createIndex:
+            tableName: transactions
+            indexName: idx_transaction_status
+            columns:
+              - column:
+                  name: status
+
+  - changeSet:
+      id: 006-create-block-requests-table
+      author: system
+      changes:
+        - createTable:
+            tableName: block_requests
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: card_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requested_by
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: PENDING
+              - column:
+                  name: requested_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processed_at
+                  type: TIMESTAMP
+              - column:
+                  name: processed_by
+                  type: BIGINT
+              - column:
+                  name: admin_comment
+                  type: VARCHAR(500)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - addForeignKeyConstraint:
+            baseTableName: block_requests
+            baseColumnNames: card_id
+            referencedTableName: cards
+            referencedColumnNames: id
+            constraintName: fk_block_requests_card
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: block_requests
+            baseColumnNames: requested_by
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_block_requests_user
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: block_requests
+            baseColumnNames: processed_by
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_block_requests_processor
+            onDelete: SET NULL
+
+  - changeSet:
+      id: 007-insert-default-roles
+      author: system
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: ROLE_USER
+              - column:
+                  name: description
+                  value: Standard user role
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: ROLE_ADMIN
+              - column:
+                  name: description
+                  value: Administrator role with full access
+
+  - changeSet:
+      id: 008-insert-default-admin-user
+      author: system
+      context: dev
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  value: admin
+              - column:
+                  name: email
+                  value: admin@bankcards.com
+              - column:
+                  name: password
+                  value: $2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36xAJLz8bUJJlkpXRyQqJ0W  # admin123
+              - column:
+                  name: first_name
+                  value: System
+              - column:
+                  name: last_name
+                  value: Administrator
+              - column:
+                  name: phone_number
+                  value: +1234567890
+              - column:
+                  name: is_active
+                  valueBoolean: true
+              - column:
+                  name: is_locked
+                  valueBoolean: false
+        - sql:
+            sql: |
+              INSERT INTO user_roles (user_id, role_id)
+              SELECT u.id, r.id
+              FROM users u, roles r
+              WHERE u.username = 'admin' AND r.name = 'ROLE_ADMIN';

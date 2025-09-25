@@ -1,9 +1,67 @@
-# 
-# docker-compose.yml — определяет сервисы для разработки и тестирования.
+version: '3.8'
 
-Что нужно сделать:
-  - Настроить сервисы для:
-      - PostgreSQL (или MySQL) с начальной базой.
-      - Приложения Spring Boot (если нужно).
-  - Открыть нужные порты (например, 5432, 8080).
-  - Настроить volume для хранения данных БД.
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: bankcards-postgres
+    environment:
+      POSTGRES_DB: bankcards_db
+      POSTGRES_USER: bankcards_user
+      POSTGRES_PASSWORD: bankcards_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - bankcards-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bankcards_user -d bankcards_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankcards-app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bankcards_db
+      SPRING_DATASOURCE_USERNAME: bankcards_user
+      SPRING_DATASOURCE_PASSWORD: bankcards_pass
+      SPRING_SECURITY_JWT_SECRET_KEY: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      SPRING_SECURITY_JWT_EXPIRATION: 86400000
+      SPRING_SECURITY_JWT_REFRESH_EXPIRATION: 604800000
+      APP_SECURITY_ENCRYPTION_KEY: ThisIsASecretKeyForCardEncryption32
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bankcards-network
+    volumes:
+      - ./logs:/app/logs
+
+  # Optional: Adminer for database management
+  adminer:
+    image: adminer:latest
+    container_name: bankcards-adminer
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    networks:
+      - bankcards-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  bankcards-network:
+    driver: bridge
